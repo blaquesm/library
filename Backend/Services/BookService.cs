@@ -3,11 +3,11 @@ using Backend.Models;
 
 namespace Backend.Data;
 
-public class BookRepository : IRepository<Book>
+public class BookService : IRepository<Book>
 {
     private readonly ApplicationDbContext _context;
 
-    public BookRepository(ApplicationDbContext context)
+    public BookService(ApplicationDbContext context)
     {
         _context = context;
     }

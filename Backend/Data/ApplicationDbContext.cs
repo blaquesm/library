@@ -1,3 +1,4 @@
+using Backend.DTO;
 using Backend.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -10,5 +11,6 @@ namespace Backend.Data
 
       public DbSet<Book> Books { get; set; }
       public DbSet<Reservation> Reservations { get; set; }
+     // public override void onModelCreating(ModelBuilder modelBuilder)
   }
 }

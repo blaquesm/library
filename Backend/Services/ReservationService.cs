@@ -51,10 +51,9 @@ public class ReservationService : IReservationService
     {
         var reservation = _reservationRepository.GetAll()
             .FirstOrDefault(r => r.BookId == bookId && r.UserId == userId);
-
-        if (reservation == null)
+        if (CanBeReserved(bookId))
         {
-            throw new InvalidOperationException("Бронирование не найдено или не принадлежит указанному пользователю.");
+            throw new InvalidOperationException("Бронирование не найдено");
         }
 
         _reservationRepository.Delete(reservation);
@@ -65,8 +64,6 @@ public class ReservationService : IReservationService
             book.IsReserved = false;
             _bookRepository.Update(book);
         }
-
-        _reservationRepository.Update(reservation);
     }
 
     public void IssueBook(int bookId, int userId)
@@ -100,6 +97,7 @@ public class ReservationService : IReservationService
         {
             book.IsIssued = false;
             book.IsReserved = false;
+            book.IsReturnBook = true;
             _bookRepository.Update(book);
             return true;
         }

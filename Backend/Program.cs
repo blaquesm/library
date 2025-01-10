@@ -1,9 +1,13 @@
+using System.Text;
 using Backend.Data;
+using Backend.DTO;
 using Backend.Interface;
 using Backend.Models;
 using Backend.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,16 +19,49 @@ builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+// Настройка сервисов
 builder.Services.AddScoped<RoleService>();
-
 builder.Services.AddScoped<IReservationService, ReservationService>();
-builder.Services.AddScoped<IRepository<Book>, BookRepository>();
+builder.Services.AddScoped<IRepository<Book>, BookService>();
 builder.Services.AddScoped<IRepository<Reservation>, ReservationRepository>();
 
+// Настройка контроллеров
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddAuthorization();
+// Настройка аутентификации с JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "your_issuer_here",
+            ValidAudience = "your_audience_here",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("My_Very_Secret_Key_12345678901234561111"))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine("Токен не прошел аутентификацию");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine("Токен успешно валидирован");
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+// Настройка Swagger для поддержки JWT
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "Library API", Version = "v1" });
@@ -55,6 +92,7 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+
 
 var app = builder.Build();
 
@@ -91,10 +129,9 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
 }
-
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
@@ -116,7 +153,7 @@ app.Run();
     }
 
     // Создаем администратора
-    var adminEmail = "admin@example.com";
+    var adminEmail = "admin";
     var adminPassword = "Admin@123";
 
 
@@ -126,7 +163,7 @@ app.Run();
         {
             UserName = adminEmail,
             Email = adminEmail,
-            FullName = "Administrator"
+            FullName = "Admin"
         };
 
         var result = await userManager.CreateAsync(adminUser, adminPassword);

@@ -1,5 +1,6 @@
 using Backend.Data;
 using Backend.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Backend.Controllers;
 
 [ApiController]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [Route("api/[controller]")]
 
 public class BooksController : ControllerBase
@@ -30,6 +32,9 @@ public class BooksController : ControllerBase
     [Authorize(Roles = "Librarian")]
     public async Task<IActionResult> AddBook([FromBody] Book book)
     {
+        if (!User.IsInRole("Librarian"))
+            return Forbid("Пользователь не имеет прав библиотекаря.");
+
         _context.Books.Add(book);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetBooks), new { id = book.Id }, book);
@@ -39,6 +44,9 @@ public class BooksController : ControllerBase
     [Authorize(Roles = "Librarian")]
     public async Task<IActionResult> DeleteBook([FromBody] Book book)
     {
+        if (!User.IsInRole("Librarian"))
+            return Forbid("Пользователь не имеет прав библиотекаря.");
+
         var existingBook = await _context.Books.FindAsync(book.Id);
         if (existingBook == null)
         {
